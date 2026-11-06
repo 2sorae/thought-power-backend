@@ -66,4 +66,17 @@ public class Diary {
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
+    public Diary(
+            Child child,
+            Emotion emotion,
+            LocalDate diaryDate,
+            InputType inputType,
+            String content
+    ) {
+        this.child = child;
+        this.emotion = emotion;
+        this.diaryDate = diaryDate;
+        this.inputType = inputType;
+        this.content = content;
+    }
 }
