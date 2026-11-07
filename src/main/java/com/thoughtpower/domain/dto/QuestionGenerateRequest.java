@@ -1,14 +1,26 @@
 package com.thoughtpower.domain.dto;
 
 import java.util.List;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
 
 public class QuestionGenerateRequest {
 
+    @NotBlank
+    @Pattern(regexp = "JOY|SADNESS|ANGER|FEAR|SURPRISE|SHAME")
     private String emotion;
+    @NotBlank
     private String content;
+    @NotNull
+    @Min(1)
+    @Max(3)
     private Integer order;
+    @NotBlank
+    @Pattern(regexp = "EMOTION|REASON|PERSPECTIVE")
     private String type;
-    private List<PreviousAnswer> previousAnswers;
+    @NotNull
+    @Size(max = 2)
+    private List<@NotNull @Valid PreviousAnswer> previousAnswers;
 
     public QuestionGenerateRequest() {
     }
@@ -55,9 +67,16 @@ public class QuestionGenerateRequest {
 
     public static class PreviousAnswer {
 
+        @NotNull
+        @Min(1)
+        @Max(3)
         private Integer order;
+        @NotBlank
+        @Pattern(regexp = "EMOTION|REASON|PERSPECTIVE")
         private String type;
+        @NotBlank
         private String question;
+        @NotBlank
         private String answer;
 
         public PreviousAnswer() {

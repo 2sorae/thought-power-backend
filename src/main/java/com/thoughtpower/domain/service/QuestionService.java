@@ -46,6 +46,21 @@ public class QuestionService {
             );
         }
 
+        var previousAnswers = request.getPreviousAnswers();
+        if (previousAnswers == null || previousAnswers.size() != order - 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "질문 순서에 맞는 이전 질문과 답변을 모두 보내주세요.");
+        }
+        String[] stages = {"EMOTION", "REASON", "PERSPECTIVE"};
+        for (int i = 0; i < previousAnswers.size(); i++) {
+            var previous = previousAnswers.get(i);
+            if (previous == null || !Integer.valueOf(i + 1).equals(previous.getOrder())
+                    || !stages[i].equals(previous.getType())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "이전 질문과 답변의 순서 및 유형을 확인해주세요.");
+            }
+        }
+
         return new QuestionGenerateResponse(
                 order,
                 type,
