@@ -34,8 +34,7 @@ public class EmotionReport {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String parentAdvice;
 
-    @Column(nullable = false, length = 100)
-    private String trendTitle;
+    //trend_title 삭제
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String trendInterpretation;
@@ -78,9 +77,7 @@ public class EmotionReport {
         return parentAdvice;
     }
 
-    public String getTrendTitle() {
-        return trendTitle;
-    }
+
 
     public String getTrendInterpretation() {
         return trendInterpretation;
