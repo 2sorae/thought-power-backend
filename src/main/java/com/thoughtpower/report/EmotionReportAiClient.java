@@ -26,7 +26,7 @@ public class EmotionReportAiClient {
 
     private static final Set<String> RESPONSE_FIELDS = Set.of(
             "most_emotion_reason",
-            "least_emtion_reason",
+            "least_emotion_reason",
             "parent_advice",
             "trend_interpretation"
     );
@@ -35,7 +35,7 @@ public class EmotionReportAiClient {
     private final String baseUrl;
 
     public EmotionReportAiClient(
-            @Value("${ai.emotion-report.base-url:")
+            @Value("${ai.emotion-report.base-url:}")
             String baseUrl,
 
             @Value("${ai.emotion-report.connect-timeout-ms:3000}")
@@ -97,7 +97,7 @@ public class EmotionReportAiClient {
 
             //필수 필드가 4개인지 확인
             if (body == null
-            || body.keySet().equals(RESPONSE_FIELDS)) {
+            || !body.keySet().equals(RESPONSE_FIELDS)) {
                 log.warn("감정 리포트 AI 응답 필드 오류");
                 return EmotionReportAiDto.Response.fallback();
             }
