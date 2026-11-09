@@ -1,6 +1,8 @@
 package com.thoughtpower.domain.controller;
 
 import com.thoughtpower.domain.service.QuestionService;
+import com.thoughtpower.domain.service.AiQuestionClient;
+import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -18,7 +20,7 @@ class QuestionControllerTest {
 
     @BeforeEach
     void setup() {
-        mvc = MockMvcBuilders.standaloneSetup(new QuestionController(new QuestionService())).build();
+        mvc = MockMvcBuilders.standaloneSetup(new QuestionController(new QuestionService(new AiQuestionClient("", Duration.ofSeconds(1), Duration.ofSeconds(1), "", "")))).build();
     }
 
     private String body(int order, String type, String history) {

@@ -8,6 +8,12 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class QuestionService {
+    private final AiQuestionClient aiQuestionClient;
+
+    public QuestionService(AiQuestionClient aiQuestionClient) {
+        this.aiQuestionClient = aiQuestionClient;
+    }
+
 
     public QuestionGenerateResponse generateQuestion(
             QuestionGenerateRequest request
@@ -60,6 +66,9 @@ public class QuestionService {
                         "이전 질문과 답변의 순서 및 유형을 확인해주세요.");
             }
         }
+
+        var generated = aiQuestionClient.generate(request);
+        if (generated.isPresent()) return generated.get();
 
         return new QuestionGenerateResponse(
                 order,
