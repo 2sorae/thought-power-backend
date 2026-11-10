@@ -1,0 +1,108 @@
+name: Deploy backend to EC2
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: thought-power-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      AWS_REGION: ap-northeast-2
+      DEPLOY_BUCKET: thought-power-deploy-641379499755
+      EC2_INSTANCE_ID: i-0d6b2e0f540670c92
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Test and build
+        run: |
+          bash gradlew test \
+            --tests '*QuestionControllerTest' \
+            --tests '*AiQuestionIntegrationTest'
+          bash gradlew bootJar
+
+      - name: Sign in to AWS
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
+        with:
+          role-to-assume: arn:aws:iam::641379499755:role/thought-power-github-deploy
+          aws-region: ap-northeast-2
+
+      - name: Upload and deploy JAR
+        shell: bash
+        run: |
+          artifact="s3://${DEPLOY_BUCKET}/app.jar"
+          aws s3 cp build/libs/thought-power-0.0.1-SNAPSHOT.jar "$artifact" --only-show-errors
+          url=$(aws s3 presign "$artifact" --expires-in 600)
+          echo "::add-mask::$url"
+
+          script=$(cat <<'SCRIPT'
+          set -eu
+          cd /home/ubuntu/thought-power
+          curl --fail --silent --show-error --retry 3 --max-time 90 \
+            --output app.jar.next "$1"
+          cp -p app.jar app.jar.previous
+          mv -f app.jar.next app.jar
+
+          if docker compose up -d --no-deps --force-recreate app; then
+            for attempt in $(seq 1 30); do
+              if curl --fail --silent --max-time 3 \
+                  http://127.0.0.1:8080/api/terms >/dev/null; then
+                exit 0
+              fi
+              sleep 2
+            done
+          fi
+
+          echo "Health check failed. Restoring previous JAR."
+          mv -f app.jar.previous app.jar
+          docker compose up -d --no-deps --force-recreate app
+          exit 1
+          SCRIPT
+          )
+
+          printf -v command 'bash -c %q -- %q' "$script" "$url"
+          jq -n --arg command "$command" \
+            '{commands: [$command], executionTimeout: ["300"]}' > ssm-parameters.json
+
+          command_id=$(aws ssm send-command \
+            --instance-ids "$EC2_INSTANCE_ID" \
+            --document-name AWS-RunShellScript \
+            --parameters file://ssm-parameters.json \
+            --query Command.CommandId --output text)
+
+          for attempt in $(seq 1 60); do
+            status=$(aws ssm get-command-invocation \
+              --command-id "$command_id" \
+              --instance-id "$EC2_INSTANCE_ID" \
+              --query Status --output text 2>/dev/null || true)
+
+            case "$status" in
+              Success) exit 0 ;;
+              Failed|Cancelled|TimedOut)
+                echo "EC2 deployment failed: $status (SSM command $command_id)"
+                exit 1
+                ;;
+            esac
+            sleep 5
+          done
+
+          echo "EC2 deployment result timed out (SSM command $command_id)"
+          exit 1
