@@ -1,4 +1,0 @@
-# Copy to application-local.properties in the project root.
-# This file uses Java properties syntax: escape a literal backslash as \\.
-spring.datasource.username=root
-spring.datasource.password=
