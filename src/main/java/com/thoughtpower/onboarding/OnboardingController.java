@@ -19,8 +19,20 @@ public class OnboardingController {
 
     @GetMapping("/terms")
     public TermsResponse getTerms() {
-        return new TermsResponse(onboardingService.getTerms());
+        return new TermsResponse(List.of(
+                new TermResponse("GUARDIAN", "만 14세 미만 보호자 동의", true),
+                new TermResponse("SERVICE", "서비스 이용약관", true),
+                new TermResponse("PRIVACY", "개인정보 처리방침", true)
+        ));
     }
+
+    public record TermsResponse(List<TermResponse> terms) {}
+
+    public record TermResponse(
+            String type,
+            String title,
+            boolean required
+    ) {}
 
     @PostMapping("/users/me/onboarding")
     public OnboardingResponse complete(@Valid @RequestBody OnboardingRequest request) {
@@ -28,7 +40,6 @@ public class OnboardingController {
         return new OnboardingResponse(userId, true);
     }
 
-    public record TermsResponse(List<OnboardingService.Term> terms) {}
 
     public record OnboardingRequest(
             @NotBlank @Size(max = 50) String name,
