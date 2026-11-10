@@ -8,6 +8,7 @@ import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "children")
+
 public class Child {
     @Id
     @Column(columnDefinition = "BIGINT UNSIGNED")
@@ -69,5 +70,8 @@ public class Child {
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+    public void increaseDiaryVersion() {
+        this.diaryVersion++;
     }
 }

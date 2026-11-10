@@ -57,4 +57,17 @@ public class DiaryQuestion {
     public String getAnswerText() {
         return answerText;
     }
+    public DiaryQuestion(
+            Diary diary,
+            QuestionStage stage,
+            Short sequence,
+            String questionText,
+            String answerText
+    ) {
+        this.diary = diary;
+        this.stage = stage;
+        this.sequence = sequence;
+        this.questionText = questionText;
+        this.answerText = answerText;
+    }
 }
