@@ -89,7 +89,10 @@ jobs:
           SCRIPT
           )
 
-          printf -v command 'bash -c %q -- %q' "$script" "$url"
+          encoded_script=$(printf '%s' "$script" | base64 -w 0)
+          quoted_url=$(jq -nr --arg url "$url" '$url | @sh')
+          printf -v command "printf '%%s' '%s' | base64 -d | bash -s -- %s" \
+            "$encoded_script" "$quoted_url"
           jq -n --arg command "$command" \
             '{commands: [$command], executionTimeout: ["300"]}' > ssm-parameters.json
 
