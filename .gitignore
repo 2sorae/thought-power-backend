@@ -39,3 +39,5 @@ out/
 # Local database credentials
 /application-local.properties
 /.env
+
+*.pem
