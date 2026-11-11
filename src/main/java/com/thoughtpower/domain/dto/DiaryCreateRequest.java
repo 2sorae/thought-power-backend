@@ -71,7 +71,7 @@ public class DiaryCreateRequest {
         @NotBlank
         private String content;
 
-        @NotBlank
+        @NotNull
         private String answer;
 
         public QuestionAnswer() {

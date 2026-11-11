@@ -41,7 +41,7 @@ public class QuestionService {
                 break;
             default:
                 type = "PERSPECTIVE";
-                content = "친구는 그때 어떤 기분이었을까요?";
+                content = "지금 너에게 도움이 되는 것은 무엇일까요?";
                 break;
         }
 

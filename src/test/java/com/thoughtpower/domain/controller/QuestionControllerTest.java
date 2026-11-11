@@ -74,10 +74,17 @@ class QuestionControllerTest {
 
     @Test
     void rejectsInvalidNestedAnswers() throws Exception {
-        for (String item : new String[]{FIRST.replace("How?", " "), FIRST.replace("Happy", " "),
+        for (String item : new String[]{FIRST.replace("How?", " "),
                 FIRST.replace("EMOTION", "REASON"), FIRST.replace("1", "0"),
                 FIRST.replace("1", "null"), FIRST.replace("\"Happy\"", "null")}) {
             invalid(body(2, "REASON", "[" + item + "]"));
         }
+    }
+    @Test
+    void acceptsEmptyPreviousAnswer() throws Exception {
+        String history = "[" + FIRST.replace("Happy", "") + "]";
+        mvc.perform(post("/api/diaries/questions").contentType(MediaType.APPLICATION_JSON)
+                .content(body(2, "REASON", history)))
+                .andExpect(status().isOk());
     }
 }

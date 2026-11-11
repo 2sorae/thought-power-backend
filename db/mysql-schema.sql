@@ -72,8 +72,7 @@ CREATE TABLE `diary_questions` (
                                    UNIQUE KEY `ix_diary_questions_2` (`diary_id`, `sequence`),
                                    CONSTRAINT `fk_diary_questions_diary_id` FOREIGN KEY (`diary_id`) REFERENCES `diaries` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
                                    CONSTRAINT `ck_diary_questions_1` CHECK ((`stage` = 'EMOTION' AND `sequence` = 1) OR (`stage` = 'REASON' AND `sequence` = 2) OR (`stage` = 'PERSPECTIVE' AND `sequence` = 3)),
-                                   CONSTRAINT `ck_diary_questions_2` CHECK (CHAR_LENGTH(TRIM(`question_text`)) > 0),
-                                   CONSTRAINT `ck_diary_questions_3` CHECK (CHAR_LENGTH(TRIM(`answer_text`)) > 0)
+                                   CONSTRAINT `ck_diary_questions_2` CHECK (CHAR_LENGTH(TRIM(`question_text`)) > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_as_cs;
 
 CREATE TABLE `emotion_reports` (
@@ -158,8 +157,7 @@ CREATE TABLE `diary_questions` (
   UNIQUE KEY `ix_diary_questions_2` (`diary_id`, `sequence`),
   CONSTRAINT `fk_diary_questions_diary_id` FOREIGN KEY (`diary_id`) REFERENCES `diaries` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `ck_diary_questions_1` CHECK ((`stage` = 'EMOTION' AND `sequence` = 1) OR (`stage` = 'REASON' AND `sequence` = 2) OR (`stage` = 'PERSPECTIVE' AND `sequence` = 3)),
-  CONSTRAINT `ck_diary_questions_2` CHECK (CHAR_LENGTH(TRIM(`question_text`)) > 0),
-  CONSTRAINT `ck_diary_questions_3` CHECK (CHAR_LENGTH(TRIM(`answer_text`)) > 0)
+  CONSTRAINT `ck_diary_questions_2` CHECK (CHAR_LENGTH(TRIM(`question_text`)) > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_as_cs;
 
 CREATE TABLE `emotion_reports` (

@@ -2,6 +2,7 @@ package com.thoughtpower.domain.controller;
 
 import com.sun.net.httpserver.HttpServer;
 import com.thoughtpower.domain.service.AiQuestionClient;
+import com.thoughtpower.domain.service.AiAnswerCheckClient;
 import com.thoughtpower.domain.service.QuestionService;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
@@ -169,5 +170,50 @@ class AiQuestionIntegrationTest {
                 .content(REQUEST.replace("\"order\":2", "\"order\":3")))
                 .andExpect(status().isBadRequest());
         assertEquals(0, calls.get());
+    }
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void answerCheckReadsBooleanAndSendsEmptyAnswer(boolean informative) {
+        responseBody = "{\"informative\":" + informative + "}";
+        var checker = new AiAnswerCheckClient(url, Duration.ofSeconds(2), "X-Test-Key", "test-only");
+        assertEquals(informative, checker.isInformative(""));
+        assertEquals("{\"answer\":\"\"}", receivedBody);
+        assertEquals("test-only", receivedAuth);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {400, 401, 422, 500, 503})
+    void answerCheckAnyHttpErrorProceeds(int statusCode) {
+        responseStatus = statusCode;
+        responseBody = "{}";
+        assertTrue(new AiAnswerCheckClient(url, Duration.ofSeconds(2), "", "").isInformative("몰라요"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"{}", "not json", "null", "{\"informative\":\"false\"}"})
+    void answerCheckMalformedBodyProceeds(String body) {
+        responseBody = body;
+        assertTrue(new AiAnswerCheckClient(url, Duration.ofSeconds(2), "", "").isInformative(""));
+    }
+
+    @Test
+    void answerCheckTimeoutAndDisabledProceed() {
+        delayMillis = 500;
+        responseBody = "{\"informative\":false}";
+        assertTrue(new AiAnswerCheckClient(url, Duration.ofMillis(100), "", "").isInformative(""));
+        assertTrue(new AiAnswerCheckClient("", Duration.ofSeconds(1), "", "").isInformative(""));
+    }
+
+    @Test
+    void retryPayloadIncludesActualQuestionAndBlankAnswer() throws Exception {
+        responseBody = "{\"order\":2,\"type\":\"REASON\",\"content\":\"쉬운 질문?\",\"isFallback\":false}";
+        String retryRequest = REQUEST.stripTrailing();
+        retryRequest = retryRequest.substring(0, retryRequest.length()-1)
+                + ",\"retry\":{\"question\":\"실제 질문?\",\"answer\":\"\"}}";
+        mvc(Duration.ofSeconds(2)).perform(post("/api/diaries/questions")
+                .contentType(MediaType.APPLICATION_JSON).content(retryRequest)).andExpect(status().isOk());
+        assertTrue(receivedBody.contains("\"retry\""));
+        assertTrue(receivedBody.contains("실제 질문?"));
+        assertTrue(receivedBody.contains("\"answer\":\"\""));
     }
 }

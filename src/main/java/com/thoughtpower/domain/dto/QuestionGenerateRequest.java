@@ -22,6 +22,25 @@ public class QuestionGenerateRequest {
     @Size(max = 2)
     private List<@NotNull @Valid PreviousAnswer> previousAnswers;
 
+    @Valid
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private Retry retry;
+
+    public Retry getRetry() { return retry; }
+    public void setRetry(Retry retry) { this.retry = retry; }
+
+    public static class Retry {
+        @NotBlank
+        private String question;
+        @NotNull
+        private String answer;
+        public Retry() {}
+        public String getQuestion() { return question; }
+        public void setQuestion(String question) { this.question = question; }
+        public String getAnswer() { return answer; }
+        public void setAnswer(String answer) { this.answer = answer; }
+    }
+
     public QuestionGenerateRequest() {
     }
 
@@ -76,7 +95,7 @@ public class QuestionGenerateRequest {
         private String type;
         @NotBlank
         private String question;
-        @NotBlank
+        @NotNull
         private String answer;
 
         public PreviousAnswer() {
