@@ -1,5 +1,6 @@
 package com.thoughtpower.settings;
 
+import com.thoughtpower.identity.CurrentClient;
 import com.thoughtpower.settings.UserSettingsController.UserUpdateRequest;
 import com.thoughtpower.domain.entity.GuardianType;
 import org.springframework.http.HttpStatus;
@@ -16,12 +17,13 @@ import java.util.List;
 @Service
 public class UserSettingsService {
 
-    private static final long DEMO_USER_ID = 1L;
 
     private final JdbcTemplate jdbc;
+    private final CurrentClient currentClient;
 
-    public UserSettingsService(JdbcTemplate jdbc) {
+    public UserSettingsService(JdbcTemplate jdbc, CurrentClient currentClient) {
         this.jdbc = jdbc;
+        this.currentClient = currentClient;
     }
 
     public UserResponse getUser() {
@@ -38,7 +40,7 @@ public class UserSettingsService {
                                 resultSet.getString("guardian_type")
                         )
                 ),
-                DEMO_USER_ID
+                currentClient.requireChildId()
         );
 
         if(users.isEmpty()){
@@ -85,7 +87,7 @@ public class UserSettingsService {
                 request.age(),
                 ageRecordedAt,
                 guardianType,
-                DEMO_USER_ID
+                currentClient.requireChildId()
         );
 
         return getUser();

@@ -34,8 +34,7 @@ jobs:
 
       - name: Test and build
         run: |
-          bash gradlew test \
-            --tests '*Question*Test'
+          bash gradlew test
           bash gradlew bootJar
           
       - name: Check AWS OIDC claims

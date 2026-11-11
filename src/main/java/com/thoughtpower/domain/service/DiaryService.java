@@ -1,5 +1,6 @@
 package com.thoughtpower.domain.service;
 
+import com.thoughtpower.identity.CurrentClient;
 import com.thoughtpower.domain.dto.DiaryCreateRequest;
 import com.thoughtpower.domain.dto.DiaryCreateResponse;
 import com.thoughtpower.domain.entity.*;
@@ -17,6 +18,7 @@ import java.util.Set;
 @Service
 public class DiaryService {
 
+    private final CurrentClient currentClient;
     private final ChildRepository childRepository;
     private final EmotionRepository emotionRepository;
     private final DiaryRepository diaryRepository;
@@ -24,12 +26,14 @@ public class DiaryService {
     private final EmotionReportRepository emotionReportRepository;
 
     public DiaryService(
+            CurrentClient currentClient,
             ChildRepository childRepository,
             EmotionRepository emotionRepository,
             DiaryRepository diaryRepository,
             DiaryQuestionRepository diaryQuestionRepository,
             EmotionReportRepository emotionReportRepository
     ) {
+        this.currentClient = currentClient;
         this.childRepository = childRepository;
         this.emotionRepository = emotionRepository;
         this.diaryRepository = diaryRepository;
@@ -54,8 +58,9 @@ public class DiaryService {
 
         validateQuestions(request.getQuestions());
 
-        // 고정 프로필을 조회하고 동시 저장 요청을 순서대로 처리
-        Child child = childRepository.findForUpdate(1L)
+        // 브라우저별 프로필을 잠가 같은 사용자의 동시 저장 요청을 순서대로 처리
+        long childId = currentClient.requireChildId();
+        Child child = childRepository.findForUpdate(childId)
                 .orElseThrow(() -> new DiaryApiException(
                         HttpStatus.NOT_FOUND,
                         "PROFILE_NOT_FOUND",
@@ -64,7 +69,7 @@ public class DiaryService {
 
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
 
-        if (diaryRepository.existsByChild_IdAndDiaryDate(1L, today)) {
+        if (diaryRepository.existsByChild_IdAndDiaryDate(childId, today)) {
             throw new DiaryApiException(
                     HttpStatus.CONFLICT,
                     "DIARY_ALREADY_EXISTS",

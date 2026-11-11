@@ -1,5 +1,6 @@
 package com.thoughtpower.onboarding;
 
+import com.thoughtpower.identity.CurrentClient;
 import com.thoughtpower.onboarding.OnboardingController.AgreementRequest;
 import com.thoughtpower.onboarding.OnboardingController.OnboardingRequest;
 import java.io.IOException;
@@ -18,14 +19,15 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class OnboardingService {
 
-    private static final long DEMO_USER_ID = 1;
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
     private final JdbcTemplate jdbc;
+    private final CurrentClient currentClient;
     private final List<Term> terms;
 
-    public OnboardingService(JdbcTemplate jdbc) throws IOException {
+    public OnboardingService(JdbcTemplate jdbc, CurrentClient currentClient) throws IOException {
         this.jdbc = jdbc;
+        this.currentClient = currentClient;
         this.terms = List.of(
                 loadTerm("GUARDIAN", "1.0", "guardian.txt"),
                 loadTerm("SERVICE", "1.0", "service.txt"),
@@ -36,6 +38,7 @@ public class OnboardingService {
         return terms;
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public long complete(OnboardingRequest request){
         validateAgreements(request.agreements());
 
@@ -44,7 +47,7 @@ public class OnboardingService {
         String guardianType = request.helperType().name();
 
         jdbc.update("""
-                    INSERT INTO children (id, name, age, age_recorded_at, guardian_type)
+                    INSERT INTO children (client_id, name, age, age_recorded_at, guardian_type)
                                     VALUES (?, ?, ?, ?, ?)
                                     ON DUPLICATE KEY UPDATE
                                         name = ?,
@@ -52,9 +55,9 @@ public class OnboardingService {
                                         age_recorded_at = ?,
                                         guardian_type = ?  
                 """,
-                DEMO_USER_ID, name, request.age(), ageRecordedAt, guardianType, name, request.age(), ageRecordedAt, guardianType);
+                currentClient.clientId(), name, request.age(), ageRecordedAt, guardianType, name, request.age(), ageRecordedAt, guardianType);
 
-        return DEMO_USER_ID;
+        return currentClient.requireChildId();
     }
 
     private void validateAgreements(List<AgreementRequest> submitted) {

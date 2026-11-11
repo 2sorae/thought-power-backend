@@ -1,6 +1,7 @@
 package com.thoughtpower.domain.service;
 
 import com.thoughtpower.domain.dto.*;
+import com.thoughtpower.identity.CurrentClient;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class QuestionFlowService {
     private static final String[] TYPES = {"EMOTION", "REASON", "PERSPECTIVE"};
+    private final CurrentClient currentClient;
     private final QuestionService questions;
     private final AiAnswerCheckClient checker;
     private final Duration ttl;
@@ -22,15 +24,16 @@ public class QuestionFlowService {
     private final Map<UUID, Flow> flows = new ConcurrentHashMap<>();
 
     @Autowired
-    public QuestionFlowService(QuestionService questions, AiAnswerCheckClient checker,
+    public QuestionFlowService(QuestionService questions, AiAnswerCheckClient checker, CurrentClient currentClient,
             @Value("${diary.question-flow.ttl:30m}") Duration ttl,
             @Value("${diary.question-flow.max-active:1000}") int maxFlows) {
-        this(questions, checker, ttl, maxFlows, Clock.systemUTC());
+        this(questions, checker, currentClient, ttl, maxFlows, Clock.systemUTC());
     }
 
-    QuestionFlowService(QuestionService questions, AiAnswerCheckClient checker,
+    QuestionFlowService(QuestionService questions, AiAnswerCheckClient checker, CurrentClient currentClient,
             Duration ttl, int maxFlows, Clock clock) {
         if (ttl.isZero() || ttl.isNegative() || maxFlows < 1) throw new IllegalArgumentException("Invalid flow limits");
+        this.currentClient = currentClient;
         this.questions = questions;
         this.checker = checker;
         this.ttl = ttl;
@@ -44,7 +47,7 @@ public class QuestionFlowService {
                 || request.getRetry() != null) {
             throw error(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "첫 질문은 order=1, type=EMOTION, previousAnswers=[]로 시작해주세요.");
         }
-        Flow flow = new Flow(request.getEmotion(), request.getContent(), clock.instant().plus(ttl));
+        Flow flow = new Flow(currentClient.clientId(), request.getEmotion(), request.getContent(), clock.instant().plus(ttl));
         synchronized (flows) {
             flows.entrySet().removeIf(entry -> !entry.getValue().expiresAt.isAfter(clock.instant()));
             if (flows.size() >= maxFlows) throw error(HttpStatus.SERVICE_UNAVAILABLE, "FLOW_CAPACITY_EXCEEDED", "잠시 후 다시 시도해주세요.");
@@ -60,7 +63,11 @@ public class QuestionFlowService {
     }
 
     public QuestionFlowResponse submit(UUID flowId, QuestionAnswerSubmitRequest request) {
+        String owner = currentClient.clientId();
         Flow flow = flows.get(flowId);
+        if (flow != null && !flow.clientId.equals(owner)) {
+            throw error(HttpStatus.NOT_FOUND, "QUESTION_FLOW_NOT_FOUND", "질문 진행 정보를 찾을 수 없습니다.");
+        }
         if (flow == null) throw expired();
         synchronized (flow) {
             if (!flow.expiresAt.isAfter(clock.instant())) {
@@ -146,6 +153,7 @@ public class QuestionFlowService {
     }
     private static class Flow {
         private final UUID id = UUID.randomUUID();
+        private final String clientId;
         private final String emotion;
         private final String content;
         private final Instant expiresAt;
@@ -155,7 +163,8 @@ public class QuestionFlowService {
         private QuestionGenerateResponse current;
         private List<DiaryCreateRequest.QuestionAnswer> answers = List.of();
         private final Map<Integer, Submission> submissions = new HashMap<>();
-        private Flow(String emotion, String content, Instant expiresAt) {
+        private Flow(String clientId, String emotion, String content, Instant expiresAt) {
+            this.clientId = clientId;
             this.emotion = emotion;
             this.content = content;
             this.expiresAt = expiresAt;
