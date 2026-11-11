@@ -42,7 +42,10 @@ public class EmotionReportAiClient {
             int connectTimeoutMs,
 
             @Value("${ai.emotion-report.read-timeout-ms:15000}")
-            int readTimeoutMs
+            int readTimeoutMs,
+
+            @Value("${AI_API_KEY:}")
+            String apiKey
     ) {
         if (connectTimeoutMs <= 0 || readTimeoutMs <= 0) {
             throw new IllegalArgumentException("AI 통신 제한 시간은 0 보다 커야 합니다.");
@@ -56,9 +59,11 @@ public class EmotionReportAiClient {
         factory.setConnectTimeout(connectTimeoutMs);
         factory.setReadTimeout(readTimeoutMs);
 
-        this.restClient = RestClient.builder()
-                .requestFactory(factory)
-                .build();
+        var builder = RestClient.builder().requestFactory(factory);
+        if (hasText(apiKey)) {
+            builder.defaultHeader("X-API-Key", apiKey);
+        }
+        this.restClient = builder.build();
     }
 
     public EmotionReportAiDto.Response generate(
