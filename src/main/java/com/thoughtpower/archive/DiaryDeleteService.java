@@ -1,5 +1,6 @@
 package com.thoughtpower.archive;
 
+import com.thoughtpower.identity.CurrentClient;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -9,12 +10,13 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class DiaryDeleteService {
 
-    private static final long DEMO_USER_ID = 1L;
 
     private final JdbcTemplate jdbc;
+    private final CurrentClient currentClient;
 
-    public DiaryDeleteService(JdbcTemplate jdbc) {
+    public DiaryDeleteService(JdbcTemplate jdbc, CurrentClient currentClient) {
         this.jdbc = jdbc;
+        this.currentClient = currentClient;
     }
 
     @Transactional
@@ -28,7 +30,7 @@ public class DiaryDeleteService {
                    SET diary_version = diary_version + 1
                    WHERE id = ?
            """,
-                DEMO_USER_ID);
+                currentClient.requireChildId());
 
         if (updateUsers == 0) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자 프로필이 없습니다.");
@@ -40,7 +42,7 @@ public class DiaryDeleteService {
                   AND child_id = ?
                 """,
                 diaryId,
-                DEMO_USER_ID
+                currentClient.requireChildId()
         );
 
         if (deletedDiaries == 0) {
@@ -54,7 +56,7 @@ public class DiaryDeleteService {
                 DELETE FROM emotion_reports
                 WHERE child_id = ?
                 """,
-                DEMO_USER_ID
+                currentClient.requireChildId()
         );
     }
 }

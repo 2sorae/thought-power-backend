@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class QuestionFlowServiceTest {
+    private com.thoughtpower.identity.CurrentClient client;
     private QuestionService generator;
     private AiAnswerCheckClient checker;
     private QuestionFlowService flows;
@@ -24,6 +25,8 @@ class QuestionFlowServiceTest {
     };
     @BeforeEach
     void setup() {
+        client = mock(com.thoughtpower.identity.CurrentClient.class);
+        when(client.clientId()).thenReturn("client-a");
         generator = mock(QuestionService.class);
         checker = mock(AiAnswerCheckClient.class);
         when(generator.generateQuestion(any())).thenAnswer(call -> {
@@ -31,7 +34,7 @@ class QuestionFlowServiceTest {
             return new QuestionGenerateResponse(request.getOrder(), request.getType(),
                     (request.getRetry() == null ? "Question " : "Easy ") + request.getOrder(), false);
         });
-        flows = new QuestionFlowService(generator, checker, Duration.ofMinutes(30), 10, clock);
+        flows = new QuestionFlowService(generator, checker, client, Duration.ofMinutes(30), 10, clock);
     }
     private QuestionGenerateRequest startRequest() {
         var request = new QuestionGenerateRequest();
@@ -130,6 +133,16 @@ class QuestionFlowServiceTest {
         for(int i=0;i<3;i++) response=flows.submit(id,answer(i,"ok"));
         assertSame(response,flows.submit(id,answer(2,"ok")));
         assertThrows(AiQuestionException.class,()->flows.submit(id,answer(3,"ok")));
+    }
+    @Test
+    void anotherClientCannotSubmitOrReplayAnAnswer() {
+        var initial = flows.start(startRequest());
+        flows.submit(initial.getFlowId(), answer(0, ""));
+        when(client.clientId()).thenReturn("client-b");
+        var ex = assertThrows(AiQuestionException.class,
+                () -> flows.submit(initial.getFlowId(), answer(0, "")));
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatus());
+        verify(checker, times(1)).isInformative(anyString());
     }
     @Test
     void independentFlowsHaveIndependentRetryCounts() {

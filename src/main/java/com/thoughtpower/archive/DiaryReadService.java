@@ -1,5 +1,6 @@
 package com.thoughtpower.archive;
 
+import com.thoughtpower.identity.CurrentClient;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,13 +16,14 @@ import java.time.LocalDate;
 @Service
 public class DiaryReadService {
 
-    private static final long DEMO_USER_ID = 1l;
     private static final int PREVIEW_LENGTH = 100;
 
     private final JdbcTemplate jdbc;
+    private final CurrentClient currentClient;
 
-    public DiaryReadService(JdbcTemplate jdbc) {
+    public DiaryReadService(JdbcTemplate jdbc, CurrentClient currentClient) {
         this.jdbc = jdbc;
+        this.currentClient = currentClient;
     }
 
     public DiaryListResponse getDiaries(LocalDate date) {
@@ -47,7 +49,7 @@ public class DiaryReadService {
                         resultSet.getString("content_preview")
                 ),
                 PREVIEW_LENGTH,
-                DEMO_USER_ID,
+                currentClient.requireChildId(),
                 Date.valueOf(date)
         );
 
@@ -116,7 +118,7 @@ public class DiaryReadService {
                         );
                     },
                     diaryId,
-                    DEMO_USER_ID
+                    currentClient.requireChildId()
                 );
 
         if (diary == null) {

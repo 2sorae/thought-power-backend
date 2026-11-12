@@ -1,5 +1,6 @@
 package com.thoughtpower.report;
 
+import com.thoughtpower.identity.CurrentClient;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Date;
@@ -17,17 +18,19 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @Service
 public class EmotionReportService {
 
-    private static final long DEMO_USER_ID = 1L;
 
     private final JdbcTemplate jdbc;
+    private final CurrentClient currentClient;
     private final EmotionReportAiClient aiClient;
     private final Map<String, String> legend;
 
     public EmotionReportService(
             JdbcTemplate jdbc,
+            CurrentClient currentClient,
             EmotionReportAiClient aiClient
     ) {
         this.jdbc = jdbc;
+        this.currentClient = currentClient;
         this.aiClient = aiClient;
 
         this.legend = new LinkedHashMap<>();
@@ -55,7 +58,7 @@ public class EmotionReportService {
                         resultSet.getDate("diary_date").toLocalDate(),
                         resultSet.getString("emotion_code")
                 ),
-                DEMO_USER_ID,
+                currentClient.requireChildId(),
                 Date.valueOf(startDate),
                 Date.valueOf(endDate)
         );

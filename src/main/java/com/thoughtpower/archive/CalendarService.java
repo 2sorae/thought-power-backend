@@ -1,5 +1,6 @@
 package com.thoughtpower.archive;
 
+import com.thoughtpower.identity.CurrentClient;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -13,12 +14,13 @@ import java.util.List;
 @Service
 public class CalendarService {
 
-    private static final long DEMO_USER_ID = 1L;
 
     private final JdbcTemplate jdbc;
+    private final CurrentClient currentClient;
 
-    public CalendarService(JdbcTemplate jdbc) {
+    public CalendarService(JdbcTemplate jdbc, CurrentClient currentClient) {
         this.jdbc = jdbc;
+        this.currentClient = currentClient;
     }
 
     public CalendarResponse getCalendar(int year, int month) {
@@ -46,7 +48,7 @@ public class CalendarService {
                         resultSet.getDate("diary_date").toLocalDate(), 1,
                         List.of(resultSet.getString("emotion_code"))
                 ),
-                DEMO_USER_ID,
+                currentClient.requireChildId(),
                 Date.valueOf(startDate),
                 Date.valueOf(endDate)
                 );

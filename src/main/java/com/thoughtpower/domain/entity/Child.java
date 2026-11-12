@@ -11,8 +11,12 @@ import org.hibernate.type.SqlTypes;
 
 public class Child {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(columnDefinition = "BIGINT UNSIGNED")
-    private Long id = 1L;
+    private Long id;
+
+    @Column(name = "client_id", length = 36, unique = true)
+    private String clientId;
 
     @Column(nullable = false, length = 50)
     private String name;
