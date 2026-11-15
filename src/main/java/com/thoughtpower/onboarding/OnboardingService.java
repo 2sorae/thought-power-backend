@@ -24,9 +24,11 @@ public class OnboardingService {
     private final JdbcTemplate jdbc;
     private final CurrentClient currentClient;
     private final List<Term> terms;
+    private final org.springframework.context.ApplicationEventPublisher events;
 
-    public OnboardingService(JdbcTemplate jdbc, CurrentClient currentClient) throws IOException {
+    public OnboardingService(JdbcTemplate jdbc, CurrentClient currentClient, org.springframework.context.ApplicationEventPublisher events) throws IOException {
         this.jdbc = jdbc;
+        this.events = events;
         this.currentClient = currentClient;
         this.terms = List.of(
                 loadTerm("GUARDIAN", "1.0", "guardian.txt"),
@@ -57,7 +59,9 @@ public class OnboardingService {
                 """,
                 currentClient.clientId(), name, request.age(), ageRecordedAt, guardianType, name, request.age(), ageRecordedAt, guardianType);
 
-        return currentClient.requireChildId();
+        long childId = currentClient.requireChildId();
+        events.publishEvent(new DemoDiarySeeder.ProfileCompleted(childId));
+        return childId;
     }
 
     private void validateAgreements(List<AgreementRequest> submitted) {
